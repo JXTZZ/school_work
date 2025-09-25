@@ -154,9 +154,27 @@ class MainWindow(QMainWindow):
         self.resize(1200, 800)
         self.files: List[str] = []
 
+        # 计算默认输出目录：优先固定为工程根目录的 output
+        def _default_output_dir() -> str:
+            try:
+                import sys
+                from pathlib import Path
+                if getattr(sys, 'frozen', False):
+                    # EXE: sys.executable 位于 dist/WatermarkStudio/WatermarkStudio.exe
+                    exe_path = Path(sys.executable).resolve()
+                    # 向上三级：WatermarkStudio -> dist -> SchoolWork
+                    root = exe_path.parent.parent.parent
+                else:
+                    # 源码运行：当前文件 app/gui.py，上两级到达工程根目录
+                    root = Path(__file__).resolve().parent.parent
+                return str((root / "output").resolve())
+            except Exception:
+                # 回退：使用当前工作目录
+                return os.path.join(os.getcwd(), "output")
+
         # State
         self.wm = WatermarkSettings()
-        self.exp = ExportSettings(output_dir=os.path.join(os.getcwd(), "output"))
+        self.exp = ExportSettings(output_dir=_default_output_dir())
 
         # UI
         self.list_widget = ImageListWidget()
@@ -202,6 +220,23 @@ class MainWindow(QMainWindow):
         last = tmpl.load_last()
         if last:
             self.wm, self.exp = last
+            # 若上次保存的输出目录位于 dist 文件夹内，自动重写到工程根目录 output
+            try:
+                from pathlib import Path
+                outp = Path(self.exp.output_dir).resolve()
+                if "dist" in [p.name.lower() for p in outp.parts]:
+                    # 重新计算默认输出目录
+                    def _default_output_dir_inner() -> str:
+                        import sys
+                        if getattr(sys, 'frozen', False):
+                            exe_path = Path(sys.executable).resolve()
+                            root = exe_path.parent.parent.parent
+                        else:
+                            root = Path(__file__).resolve().parent.parent
+                        return str((root / "output").resolve())
+                    self.exp.output_dir = _default_output_dir_inner()
+            except Exception:
+                pass
             self.preview.set_watermark_settings(self.wm)
             self._apply_state_to_ui()
 
@@ -623,6 +658,22 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "模板", "模板不存在或损坏")
             return
         self.wm, self.exp = loaded
+        # 若模板中的输出目录位于 dist 文件夹内，自动重写到工程根目录 output
+        try:
+            from pathlib import Path
+            outp = Path(self.exp.output_dir).resolve()
+            if "dist" in [p.name.lower() for p in outp.parts]:
+                def _default_output_dir_inner() -> str:
+                    import sys
+                    if getattr(sys, 'frozen', False):
+                        exe_path = Path(sys.executable).resolve()
+                        root = exe_path.parent.parent.parent
+                    else:
+                        root = Path(__file__).resolve().parent.parent
+                    return str((root / "output").resolve())
+                self.exp.output_dir = _default_output_dir_inner()
+        except Exception:
+            pass
         self.preview.set_watermark_settings(self.wm)
         self._apply_state_to_ui()
         self.preview.update_preview()
