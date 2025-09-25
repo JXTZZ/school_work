@@ -20,10 +20,10 @@
 
 ## 快速开始（Windows 可执行文件）
 
-- 如果你已经有打包好的可执行文件，直接运行：
+- 下载源文件并直接运行：
   - `dist\WatermarkStudio\WatermarkStudio.exe`
 
-- 如果还没有 EXE，可在本地构建（已支持 Python 3.13.7）：
+- 可在本地构建（已支持 Python 3.13.7）：
   1) 确认本机 Python 位于 `D:\tool\Python\python.exe`（本项目的构建脚本会优先使用该路径），或在运行前设置环境变量 `PYTHON_EXE` 指向你的 `python.exe`。
   2) 在项目根目录（包含 `build-windows.cmd` 的文件夹）打开命令行（cmd.exe）。
   3) 执行构建脚本（自动创建虚拟环境、安装依赖并打包）：
@@ -82,16 +82,6 @@ D:\tool\Python\python.exe -m venv .venv
 .venv\Scripts\python.exe -m app.main
 ```
 
-macOS：
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-python -m app.main
-```
-
----
 
 ## 打包独立应用
 
@@ -102,19 +92,11 @@ build-windows.cmd
 - 输出路径：`dist/WatermarkStudio/WatermarkStudio.exe`
 - 分发方式：请打包整个 `dist/WatermarkStudio` 文件夹（EXE 必须与同目录文件一起使用）。
 
-macOS（.app）：
-```bash
-chmod +x build-macos.sh
-./build-macos.sh
-```
-- 完成后打开 `dist/WatermarkStudio.app`
 
 ---
 
 ## 设置 / 模板存储位置
 - Windows：`%APPDATA%\WatermarkStudio\templates.json`
-- macOS：`~/Library/Application Support/WatermarkStudio/templates.json`
-- Linux：`~/.local/share/WatermarkStudio/templates.json`
 
 ---
 
