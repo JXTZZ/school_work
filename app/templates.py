@@ -1,10 +1,30 @@
 import json
 import os
+import sys
 from dataclasses import asdict
 from typing import Dict, Optional, Tuple
 from .engine import WatermarkSettings, ExportSettings, TextStyle, ImageStyle
 
-TEMPLATES_FILE = os.path.join(os.path.dirname(__file__), "templates.json")
+
+def _user_data_dir(app_name: str = "WatermarkStudio") -> str:
+    """Return a per-user writable data directory across platforms.
+    - Windows: %APPDATA%\AppName
+    - macOS: ~/Library/Application Support/AppName
+    - Linux: ~/.local/share/AppName
+    """
+    if os.name == "nt":
+        base = os.getenv("APPDATA") or os.path.expanduser("~\\AppData\\Roaming")
+    elif sys.platform == "darwin":
+        base = os.path.expanduser("~/Library/Application Support")
+    else:
+        base = os.path.expanduser("~/.local/share")
+    path = os.path.join(base, app_name)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+TEMPLATES_FILE = os.path.join(_user_data_dir(), "templates.json")
+
 
 def _empty_store():
     return {"last": None, "templates": {}}
@@ -116,4 +136,3 @@ def delete_template(name: str) -> bool:
         _save_store(store)
         return True
     return False
-
