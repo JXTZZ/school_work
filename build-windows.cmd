@@ -86,17 +86,21 @@ if errorlevel 1 (
     )
 )
 
-REM --- Build with PyInstaller ---
+REM --- Clean old exe in root if any ---
+if exist "WatermarkStudio.exe" del /f /q "WatermarkStudio.exe" >NUL 2>&1
+
+REM --- Build with PyInstaller (onefile, output to project root) ---
 echo Building executable...
-"%VENV_PY%" -m PyInstaller --noconsole --name WatermarkStudio --clean ^
+"%VENV_PY%" -m PyInstaller --noconsole --onefile --name WatermarkStudio --clean ^
+  --distpath "." --workpath "build" --specpath "." ^
   --collect-submodules PIL --collect-data PIL ^
   --collect-submodules PyQt5 --collect-data PyQt5 --hidden-import PyQt5.sip ^
   --add-data "app/templates.json;app" app/main.py
 
-if exist "dist\WatermarkStudio\WatermarkStudio.exe" (
+if exist "WatermarkStudio.exe" (
     echo.
     echo Build successful!
-    echo Executable is at: %CD%\dist\WatermarkStudio\WatermarkStudio.exe
+    echo Executable is at: %CD%\WatermarkStudio.exe
 ) else (
     echo [ERROR] Build failed. Check PyInstaller output above.
     exit /b 1

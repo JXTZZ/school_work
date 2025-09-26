@@ -160,10 +160,15 @@ class MainWindow(QMainWindow):
                 import sys
                 from pathlib import Path
                 if getattr(sys, 'frozen', False):
-                    # EXE: sys.executable 位于 dist/WatermarkStudio/WatermarkStudio.exe
                     exe_path = Path(sys.executable).resolve()
-                    # 向上三级：WatermarkStudio -> dist -> SchoolWork
-                    root = exe_path.parent.parent.parent
+                    # 兼容两种布局：
+                    # 1) 老布局: dist/WatermarkStudio/WatermarkStudio.exe -> 上跳三级到工程根
+                    # 2) 新布局: 工程根/WatermarkStudio.exe -> 直接使用父目录作为根
+                    parent = exe_path.parent
+                    if parent.name.lower() == 'watermarkstudio' and parent.parent.name.lower() == 'dist':
+                        root = parent.parent.parent
+                    else:
+                        root = parent
                 else:
                     # 源码运行：当前文件 app/gui.py，上两级到达工程根目录
                     root = Path(__file__).resolve().parent.parent
@@ -220,19 +225,35 @@ class MainWindow(QMainWindow):
         last = tmpl.load_last()
         if last:
             self.wm, self.exp = last
-            # 若上次保存的输出目录位于 dist 文件夹内，自动重写到工程根目录 output
+            # 若上次保存的输出目录位于 dist 文件夹内或与 EXE 布局不一致，自动重写到工程根目录 output
             try:
                 from pathlib import Path
+                import sys as _sys
                 outp = Path(self.exp.output_dir).resolve()
-                if "dist" in [p.name.lower() for p in outp.parts]:
-                    # 重新计算默认输出目录
+                needs_rewrite = "dist" in [p.name.lower() for p in outp.parts]
+                if getattr(_sys, 'frozen', False):
+                    exe_path = Path(_sys.executable).resolve()
+                    parent = exe_path.parent
+                    if parent.name.lower() == 'watermarkstudio' and parent.parent.name.lower() == 'dist':
+                        expected_root = parent.parent.parent
+                    else:
+                        expected_root = parent
+                    expected_out = (expected_root / 'output').resolve()
+                    if outp != expected_out:
+                        needs_rewrite = True
+                if needs_rewrite:
                     def _default_output_dir_inner() -> str:
-                        import sys
-                        if getattr(sys, 'frozen', False):
-                            exe_path = Path(sys.executable).resolve()
-                            root = exe_path.parent.parent.parent
+                        import sys as __sys
+                        from pathlib import Path as __Path
+                        if getattr(__sys, 'frozen', False):
+                            exe_path = __Path(__sys.executable).resolve()
+                            parent = exe_path.parent
+                            if parent.name.lower() == 'watermarkstudio' and parent.parent.name.lower() == 'dist':
+                                root = parent.parent.parent
+                            else:
+                                root = parent
                         else:
-                            root = Path(__file__).resolve().parent.parent
+                            root = __Path(__file__).resolve().parent.parent
                         return str((root / "output").resolve())
                     self.exp.output_dir = _default_output_dir_inner()
             except Exception:
@@ -661,15 +682,32 @@ class MainWindow(QMainWindow):
         # 若模板中的输出目录位于 dist 文件夹内，自动重写到工程根目录 output
         try:
             from pathlib import Path
+            import sys as _sys
             outp = Path(self.exp.output_dir).resolve()
-            if "dist" in [p.name.lower() for p in outp.parts]:
+            needs_rewrite = "dist" in [p.name.lower() for p in outp.parts]
+            if getattr(_sys, 'frozen', False):
+                exe_path = Path(_sys.executable).resolve()
+                parent = exe_path.parent
+                if parent.name.lower() == 'watermarkstudio' and parent.parent.name.lower() == 'dist':
+                    expected_root = parent.parent.parent
+                else:
+                    expected_root = parent
+                expected_out = (expected_root / 'output').resolve()
+                if outp != expected_out:
+                    needs_rewrite = True
+            if needs_rewrite:
                 def _default_output_dir_inner() -> str:
-                    import sys
-                    if getattr(sys, 'frozen', False):
-                        exe_path = Path(sys.executable).resolve()
-                        root = exe_path.parent.parent.parent
+                    import sys as __sys
+                    from pathlib import Path as __Path
+                    if getattr(__sys, 'frozen', False):
+                        exe_path = __Path(__sys.executable).resolve()
+                        parent = exe_path.parent
+                        if parent.name.lower() == 'watermarkstudio' and parent.parent.name.lower() == 'dist':
+                            root = parent.parent.parent
+                        else:
+                            root = parent
                     else:
-                        root = Path(__file__).resolve().parent.parent
+                        root = __Path(__file__).resolve().parent.parent
                     return str((root / "output").resolve())
                 self.exp.output_dir = _default_output_dir_inner()
         except Exception:
